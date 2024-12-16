@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Error Reporting</title>
-    <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.0.11"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.18.6/umd/index.min.js"></script>
     <style>
         #barcodeScanner {
             display: none;
@@ -56,12 +55,19 @@
 
         scanBarcodeButton.addEventListener("click", async () => {
             if (!codeReader) {
-                codeReader = new ZXing.BrowserMultiFormatReader();
+                codeReader = new ZXing.BrowserQRCodeReader(); // Correct initialization
+                console.log("CodeReader initialized:", codeReader);
             }
             barcodeScanner.style.display = "block";
 
             try {
                 const devices = await codeReader.listVideoInputDevices();
+                console.log("Available devices:", devices); // Debugging log
+                if (devices.length === 0) {
+                    alert("No camera devices found. Please check your permissions or device.");
+                    return;
+                }
+
                 const selectedDeviceId = devices[0]?.deviceId;
 
                 await codeReader.decodeFromVideoDevice(
@@ -93,4 +99,3 @@
     </script>
 </body>
 </html>
-
