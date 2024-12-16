@@ -55,7 +55,7 @@
     
         scanBarcodeButton.addEventListener("click", async () => {
             if (!codeReader) {
-                codeReader = new ZXing.BrowserQRCodeReader(); // Correct initialization
+                codeReader = new ZXing.BrowserMultiFormatReader(); // Supports various barcode formats
                 console.log("CodeReader initialized:", codeReader);
             }
             barcodeScanner.style.display = "block";
@@ -100,8 +100,6 @@
         }
     </script>
     
+    
 </body>
 </html>
-
-
-
