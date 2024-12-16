@@ -50,28 +50,39 @@
         const barcodeScanner = document.getElementById("barcodeScanner");
         const videoPreview = document.getElementById("videoPreview");
         const orderNumberInput = document.getElementById("orderNumber");
-    
+
         let codeReader;
-    
+
         scanBarcodeButton.addEventListener("click", async () => {
             if (!codeReader) {
                 codeReader = new ZXing.BrowserMultiFormatReader(); // Supports various barcode formats
                 console.log("CodeReader initialized:", codeReader);
+
+                // Restrict the reader to Code 128 format
+                codeReader.hints.set(
+                    ZXing.DecodeHintType.POSSIBLE_FORMATS,
+                    [ZXing.BarcodeFormat.CODE_128]
+                );
             }
             barcodeScanner.style.display = "block";
-    
+
             try {
                 const devices = await codeReader.listVideoInputDevices();
                 console.log("Available devices:", devices); // Debugging log
-    
+
                 // Select the back camera
                 const backCamera = devices.find(device => device.label.toLowerCase().includes("back")) || devices[0];
                 const selectedDeviceId = backCamera.deviceId;
-    
+
                 console.log("Using device:", backCamera.label); // Debug log for the selected camera
-    
-                await codeReader.decodeFromVideoDevice(
-                    selectedDeviceId,
+
+                await codeReader.decodeFromConstraints(
+                    {
+                        video: {
+                            deviceId: selectedDeviceId,
+                            focusMode: "continuous", // Autofocus setting
+                        },
+                    },
                     videoPreview,
                     (result, err) => {
                         if (result) {
@@ -89,9 +100,9 @@
                 alert("Unable to start barcode scanner. Please try again.");
             }
         });
-    
+
         stopScanButton.addEventListener("click", stopScanning);
-    
+
         function stopScanning() {
             if (codeReader) {
                 codeReader.reset();
@@ -99,7 +110,6 @@
             barcodeScanner.style.display = "none";
         }
     </script>
-    
-    
 </body>
 </html>
+
