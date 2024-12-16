@@ -50,35 +50,37 @@
         const barcodeScanner = document.getElementById("barcodeScanner");
         const videoPreview = document.getElementById("videoPreview");
         const orderNumberInput = document.getElementById("orderNumber");
-
+    
         let codeReader;
-
+    
         scanBarcodeButton.addEventListener("click", async () => {
             if (!codeReader) {
                 codeReader = new ZXing.BrowserQRCodeReader(); // Correct initialization
                 console.log("CodeReader initialized:", codeReader);
             }
             barcodeScanner.style.display = "block";
-
+    
             try {
                 const devices = await codeReader.listVideoInputDevices();
                 console.log("Available devices:", devices); // Debugging log
-                if (devices.length === 0) {
-                    alert("No camera devices found. Please check your permissions or device.");
-                    return;
-                }
-
-                const selectedDeviceId = devices[0]?.deviceId;
-
+    
+                // Select the back camera
+                const backCamera = devices.find(device => device.label.toLowerCase().includes("back")) || devices[0];
+                const selectedDeviceId = backCamera.deviceId;
+    
+                console.log("Using device:", backCamera.label); // Debug log for the selected camera
+    
                 await codeReader.decodeFromVideoDevice(
                     selectedDeviceId,
                     videoPreview,
                     (result, err) => {
                         if (result) {
-                            // Populate the order number input field
-                            orderNumberInput.value = result.text;
+                            console.log("Scanned Result:", result.text); // Debug log
+                            orderNumberInput.value = result.text; // Populate the input
                             alert(`Scanned Order Number: ${result.text}`);
                             stopScanning();
+                        } else if (err) {
+                            console.error("Scanning Error:", err); // Log scanning errors
                         }
                     }
                 );
@@ -87,9 +89,9 @@
                 alert("Unable to start barcode scanner. Please try again.");
             }
         });
-
+    
         stopScanButton.addEventListener("click", stopScanning);
-
+    
         function stopScanning() {
             if (codeReader) {
                 codeReader.reset();
@@ -97,5 +99,9 @@
             barcodeScanner.style.display = "none";
         }
     </script>
+    
 </body>
 </html>
+
+
+
