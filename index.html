@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error Reporting</title>
+    <script src="https://unpkg.com/@zxing/browser@latest"></script>
+    <style>
+        #barcodeScanner {
+            display: none;
+            margin-top: 20px;
+        }
+
+        video {
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Error Reporting Form</h1>
+    <form id="errorForm">
+        <label for="orderNumber">Order Number:</label>
+        <input type="text" id="orderNumber" name="orderNumber" required>
+        <button type="button" id="scanBarcodeButton">Scan Barcode</button>
+        <br><br>
+
+        <div id="barcodeScanner">
+            <video id="videoPreview"></video>
+            <button type="button" id="stopScanButton">Stop Scanning</button>
+        </div>
+
+        <label for="notes">Notes:</label>
+        <textarea id="notes" name="notes" rows="4" cols="50" placeholder="Describe the issue here..."></textarea>
+        <br><br>
+
+        <label>Additional Options:</label><br>
+        <input type="checkbox" id="callRequest" name="callRequest">
+        <label for="callRequest">Would like salesperson to call</label><br>
+        <input type="checkbox" id="sendASAP" name="sendASAP">
+        <label for="sendASAP">Send ASAP</label><br>
+        <br>
+
+        <button type="submit">Submit</button>
+    </form>
+
+    <script>
+        const scanBarcodeButton = document.getElementById("scanBarcodeButton");
+        const stopScanButton = document.getElementById("stopScanButton");
+        const barcodeScanner = document.getElementById("barcodeScanner");
+        const videoPreview = document.getElementById("videoPreview");
+        const orderNumberInput = document.getElementById("orderNumber");
+
+        let codeReader;
+
+        scanBarcodeButton.addEventListener("click", async () => {
+            if (!codeReader) {
+                codeReader = new ZXing.BrowserMultiFormatReader();
+            }
+            barcodeScanner.style.display = "block";
+
+            try {
+                const devices = await codeReader.listVideoInputDevices();
+                const selectedDeviceId = devices[0]?.deviceId;
+
+                await codeReader.decodeFromVideoDevice(
+                    selectedDeviceId,
+                    videoPreview,
+                    (result, err) => {
+                        if (result) {
+                            // Populate the order number input field
+                            orderNumberInput.value = result.text;
+                            alert(`Scanned Order Number: ${result.text}`);
+                            stopScanning();
+                        }
+                    }
+                );
+            } catch (err) {
+                console.error("Error starting barcode scanner", err);
+                alert("Unable to start barcode scanner. Please try again.");
+            }
+        });
+
+        stopScanButton.addEventListener("click", stopScanning);
+
+        function stopScanning() {
+            if (codeReader) {
+                codeReader.reset();
+            }
+            barcodeScanner.style.display = "none";
+        }
+    </script>
+</body>
+</html>
+
