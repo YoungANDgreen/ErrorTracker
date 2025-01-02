@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Error Reporting</title>
-    <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.18.6/umd/index.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
     <style>
         #barcodeScanner {
             display: none;
@@ -26,7 +26,7 @@
         <br><br>
 
         <div id="barcodeScanner">
-            <video id="videoPreview"></video>
+            <div id="scanner-container"></div>
             <button type="button" id="stopScanButton">Stop Scanning</button>
         </div>
 
@@ -48,68 +48,71 @@
         const scanBarcodeButton = document.getElementById("scanBarcodeButton");
         const stopScanButton = document.getElementById("stopScanButton");
         const barcodeScanner = document.getElementById("barcodeScanner");
-        const videoPreview = document.getElementById("videoPreview");
         const orderNumberInput = document.getElementById("orderNumber");
 
-        let codeReader;
+        let isScanning = false;
 
-        scanBarcodeButton.addEventListener("click", async () => {
-            if (!codeReader) {
-                codeReader = new ZXing.BrowserMultiFormatReader(); // Supports various barcode formats
-                console.log("CodeReader initialized:", codeReader);
-
-                // Restrict the reader to Code 128 format
-                codeReader.hints.set(
-                    ZXing.DecodeHintType.POSSIBLE_FORMATS,
-                    [ZXing.BarcodeFormat.CODE_128]
-                );
-            }
-            barcodeScanner.style.display = "block";
-
-            try {
-                const devices = await codeReader.listVideoInputDevices();
-                console.log("Available devices:", devices); // Debugging log
-
-                // Select the back camera
-                const backCamera = devices.find(device => device.label.toLowerCase().includes("back")) || devices[0];
-                const selectedDeviceId = backCamera.deviceId;
-
-                console.log("Using device:", backCamera.label); // Debug log for the selected camera
-
-                await codeReader.decodeFromConstraints(
-                    {
-                        video: {
-                            deviceId: selectedDeviceId,
-                            focusMode: "continuous", // Autofocus setting
-                        },
-                    },
-                    videoPreview,
-                    (result, err) => {
-                        if (result) {
-                            console.log("Scanned Result:", result.text); // Debug log
-                            orderNumberInput.value = result.text; // Populate the input
-                            alert(`Scanned Order Number: ${result.text}`);
-                            stopScanning();
-                        } else if (err) {
-                            console.error("Scanning Error:", err); // Log scanning errors
-                        }
-                    }
-                );
-            } catch (err) {
-                console.error("Error starting barcode scanner", err);
-                alert("Unable to start barcode scanner. Please try again.");
+        scanBarcodeButton.addEventListener("click", () => {
+            if (!isScanning) {
+                startScanning();
+                barcodeScanner.style.display = "block";
+                isScanning = true;
             }
         });
 
         stopScanButton.addEventListener("click", stopScanning);
 
+        function startScanning() {
+            Quagga.init(
+                {
+                    inputStream: {
+                        name: "Live",
+                        type: "LiveStream",
+                        target: document.getElementById("scanner-container"), // ID of the container for video preview
+                        constraints: {
+                            width: 640,
+                            height: 480,
+                            facingMode: "environment", // Use the back camera
+                        },
+                    },
+                    decoder: {
+                        readers: ["code_128_reader"], // Specify the barcode format
+                    },
+                },
+                function (err) {
+                    if (err) {
+                        console.error("Quagga initialization error:", err);
+                        return;
+                    }
+                    Quagga.start();
+                    console.log("Quagga started.");
+                }
+            );
+
+            // Process detected barcodes
+            Quagga.onDetected((result) => {
+                if (result && result.codeResult && result.codeResult.code) {
+                    const scannedCode = result.codeResult.code;
+                    console.log("Scanned Code:", scannedCode);
+
+                    // Populate the input field with the scanned code
+                    orderNumberInput.value = scannedCode;
+
+                    // Stop scanning after successful detection
+                    stopScanning();
+                    alert(`Scanned Order Number: ${scannedCode}`);
+                }
+            });
+        }
+
         function stopScanning() {
-            if (codeReader) {
-                codeReader.reset();
+            if (isScanning) {
+                Quagga.stop();
+                barcodeScanner.style.display = "none";
+                isScanning = false;
+                console.log("Quagga stopped.");
             }
-            barcodeScanner.style.display = "none";
         }
     </script>
 </body>
 </html>
-
