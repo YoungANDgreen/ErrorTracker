@@ -6,23 +6,31 @@
     <title>Error Reporting</title>
     <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
     <style>
-        #barcodeScanner {
-            display: none;
-            position: relative;
-            margin-top: 20px;
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            text-align: center;
         }
 
-        #scanner-container {
-            position: relative;
-            width: 100%;
-            height: 400px;
-            overflow: hidden;
-            background-color: black;
+        h1 {
+            margin: 20px 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
         video {
             width: 100%;
             height: auto;
+            border-radius: 8px;
         }
 
         #overlay {
@@ -36,43 +44,89 @@
             box-sizing: border-box;
         }
 
-        .feedback {
-            position: absolute;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
+        .form-group {
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        label {
+            font-weight: bold;
+        }
+
+        input, textarea, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 8px;
+            box-sizing: border-box;
+        }
+
+        textarea {
+            resize: vertical;
+        }
+
+        button {
+            background-color: #007bff;
             color: white;
-            background-color: rgba(0, 0, 0, 0.5);
-            padding: 5px 10px;
+            border: none;
             border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #barcodeScanner {
+            display: none;
+            position: relative;
+            margin-top: 20px;
+        }
+
+        #scanner-container {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            overflow: hidden;
+            background-color: black;
         }
     </style>
 </head>
 <body>
     <h1>Error Reporting Form</h1>
-    <form id="errorForm">
-        <label for="orderNumber">Order Number:</label>
-        <input type="text" id="orderNumber" name="orderNumber" required>
-        <button type="button" id="scanBarcodeButton">Scan Barcode</button>
-        <br><br>
-
-        <div id="barcodeScanner">
-            <div id="scanner-container">
-                <div id="overlay"></div>
-                <div class="feedback" id="feedback">Align barcode within the red rectangle</div>
+    <div class="container">
+        <form id="errorForm">
+            <div class="form-group">
+                <label for="orderNumber">Order Number:</label>
+                <input type="text" id="orderNumber" name="orderNumber" required>
+                <button type="button" id="scanBarcodeButton">Scan Barcode</button>
             </div>
-            <button type="button" id="stopScanButton">Stop Scanning</button>
-        </div>
-    </form>
+
+            <div id="barcodeScanner">
+                <div id="scanner-container">
+                    <div id="overlay"></div>
+                </div>
+                <button type="button" id="stopScanButton">Stop Scanning</button>
+            </div>
+
+            <div class="form-group">
+                <label for="problemDescription">Problem Description:</label>
+                <textarea id="problemDescription" name="problemDescription" rows="4" placeholder="Describe the issue here..." required></textarea>
+            </div>
+
+            <button type="submit">Submit</button>
+        </form>
+    </div>
 
     <script>
         const scanBarcodeButton = document.getElementById("scanBarcodeButton");
         const stopScanButton = document.getElementById("stopScanButton");
         const barcodeScanner = document.getElementById("barcodeScanner");
         const orderNumberInput = document.getElementById("orderNumber");
+        const errorForm = document.getElementById("errorForm");
 
         let isScanning = false;
 
+        // Barcode Scanning Logic
         scanBarcodeButton.addEventListener("click", () => {
             if (!isScanning) {
                 startScanning();
@@ -99,11 +153,6 @@
                     decoder: {
                         readers: ["code_128_reader"],
                     },
-                    locate: true, // Locate barcode position
-                    locator: {
-                        patchSize: "medium",
-                        halfSample: true,
-                    },
                 },
                 function (err) {
                     if (err) {
@@ -128,33 +177,6 @@
                     alert(`Scanned Order Number: ${scannedCode}`);
                 }
             });
-
-            Quagga.onProcessed((result) => {
-                const drawingCtx = Quagga.canvas.ctx.overlay;
-                const drawingCanvas = Quagga.canvas.dom.overlay;
-
-                if (result) {
-                    drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
-
-                    if (result.boxes) {
-                        result.boxes
-                            .filter((box) => box !== result.box)
-                            .forEach((box) => {
-                                Quagga.ImageDebug.drawPath(box, { x: 0, y: 1 }, drawingCtx, {
-                                    color: "blue",
-                                    lineWidth: 2,
-                                });
-                            });
-                    }
-
-                    if (result.box) {
-                        Quagga.ImageDebug.drawPath(result.box, { x: 0, y: 1 }, drawingCtx, {
-                            color: "green",
-                            lineWidth: 2,
-                        });
-                    }
-                }
-            });
         }
 
         function stopScanning() {
@@ -165,9 +187,22 @@
                 console.log("Quagga stopped.");
             }
         }
+
+        // Form Submission Logic
+        errorForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+
+            const orderNumber = orderNumberInput.value;
+            const problemDescription = document.getElementById("problemDescription").value;
+
+            // Open mail client with pre-filled details
+            const mailtoLink = `mailto:sales@example.com?subject=Order Issue: ${orderNumber}&body=${encodeURIComponent(problemDescription)}`;
+            window.location.href = mailtoLink;
+        });
     </script>
 </body>
 </html>
+
 
 
 
