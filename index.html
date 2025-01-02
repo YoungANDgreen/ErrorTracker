@@ -8,12 +8,43 @@
     <style>
         #barcodeScanner {
             display: none;
+            position: relative;
             margin-top: 20px;
         }
 
+        #scanner-container {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            overflow: hidden;
+            background-color: black;
+        }
+
         video {
-            max-width: 100%;
+            width: 100%;
             height: auto;
+        }
+
+        #overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 80%;
+            height: 30%;
+            border: 2px solid red;
+            transform: translate(-50%, -50%);
+            box-sizing: border-box;
+        }
+
+        .feedback {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 5px 10px;
+            border-radius: 5px;
         }
     </style>
 </head>
@@ -26,22 +57,12 @@
         <br><br>
 
         <div id="barcodeScanner">
-            <div id="scanner-container"></div>
+            <div id="scanner-container">
+                <div id="overlay"></div>
+                <div class="feedback" id="feedback">Align barcode within the red rectangle</div>
+            </div>
             <button type="button" id="stopScanButton">Stop Scanning</button>
         </div>
-
-        <label for="notes">Notes:</label>
-        <textarea id="notes" name="notes" rows="4" cols="50" placeholder="Describe the issue here..."></textarea>
-        <br><br>
-
-        <label>Additional Options:</label><br>
-        <input type="checkbox" id="callRequest" name="callRequest">
-        <label for="callRequest">Would like salesperson to call</label><br>
-        <input type="checkbox" id="sendASAP" name="sendASAP">
-        <label for="sendASAP">Send ASAP</label><br>
-        <br>
-
-        <button type="submit">Submit</button>
     </form>
 
     <script>
@@ -68,15 +89,20 @@
                     inputStream: {
                         name: "Live",
                         type: "LiveStream",
-                        target: document.getElementById("scanner-container"), // ID of the container for video preview
+                        target: document.getElementById("scanner-container"),
                         constraints: {
                             width: 640,
                             height: 480,
-                            facingMode: "environment", // Use the back camera
+                            facingMode: "environment",
                         },
                     },
                     decoder: {
-                        readers: ["code_128_reader"], // Specify the barcode format
+                        readers: ["code_128_reader"],
+                    },
+                    locate: true, // Locate barcode position
+                    locator: {
+                        patchSize: "medium",
+                        halfSample: true,
                     },
                 },
                 function (err) {
@@ -89,7 +115,6 @@
                 }
             );
 
-            // Process detected barcodes
             Quagga.onDetected((result) => {
                 if (result && result.codeResult && result.codeResult.code) {
                     const scannedCode = result.codeResult.code;
@@ -101,6 +126,33 @@
                     // Stop scanning after successful detection
                     stopScanning();
                     alert(`Scanned Order Number: ${scannedCode}`);
+                }
+            });
+
+            Quagga.onProcessed((result) => {
+                const drawingCtx = Quagga.canvas.ctx.overlay;
+                const drawingCanvas = Quagga.canvas.dom.overlay;
+
+                if (result) {
+                    drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+
+                    if (result.boxes) {
+                        result.boxes
+                            .filter((box) => box !== result.box)
+                            .forEach((box) => {
+                                Quagga.ImageDebug.drawPath(box, { x: 0, y: 1 }, drawingCtx, {
+                                    color: "blue",
+                                    lineWidth: 2,
+                                });
+                            });
+                    }
+
+                    if (result.box) {
+                        Quagga.ImageDebug.drawPath(result.box, { x: 0, y: 1 }, drawingCtx, {
+                            color: "green",
+                            lineWidth: 2,
+                        });
+                    }
                 }
             });
         }
@@ -116,3 +168,6 @@
     </script>
 </body>
 </html>
+
+
+
