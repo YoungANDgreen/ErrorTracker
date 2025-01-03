@@ -138,6 +138,28 @@
         stopScanButton.addEventListener("click", stopScanning);
 
         function startScanning() {
+            // Show a modal guiding the user
+            const scannerModal = document.createElement("div");
+            scannerModal.id = "scanner-modal";
+            scannerModal.style.position = "fixed";
+            scannerModal.style.top = "0";
+            scannerModal.style.left = "0";
+            scannerModal.style.width = "100%";
+            scannerModal.style.height = "100%";
+            scannerModal.style.backgroundColor = "rgba(0, 0, 0, 0.8)";
+            scannerModal.style.color = "white";
+            scannerModal.style.display = "flex";
+            scannerModal.style.justifyContent = "center";
+            scannerModal.style.alignItems = "center";
+            scannerModal.style.zIndex = "9999";
+            scannerModal.innerHTML = `
+                <div style="text-align: center;">
+                    <h2>Align the barcode with the red lines</h2>
+                    <p>Scanner is starting, please wait...</p>
+                </div>
+            `;
+            document.body.appendChild(scannerModal);
+        
             Quagga.init(
                 {
                     inputStream: {
@@ -157,28 +179,32 @@
                 function (err) {
                     if (err) {
                         console.error("Quagga initialization error:", err);
+                        document.body.removeChild(scannerModal); // Remove modal on error
                         return;
                     }
                     Quagga.start();
                     console.log("Quagga started.");
+                    document.body.removeChild(scannerModal); // Remove modal when ready
                 }
             );
-
+        
             Quagga.onDetected((result) => {
                 if (result && result.codeResult && result.codeResult.code) {
                     const scannedCode = result.codeResult.code;
                     console.log("Scanned Code:", scannedCode);
-
-                    // Populate the input field with the scanned code
-                    orderNumberInput.value = scannedCode;
-
-                    // Stop scanning after successful detection
-                    stopScanning();
-                    alert(`Scanned Order Number: ${scannedCode}`);
+        
+                    // Check if barcode starts with 'S'
+                    if (scannedCode.startsWith("S")) {
+                        orderNumberInput.value = scannedCode;
+                        stopScanning();
+                        alert(`Scanned Order Number: ${scannedCode}`);
+                    } else {
+                        alert("Invalid barcode detected. Please scan again.");
+                    }
                 }
             });
         }
-
+        
         function stopScanning() {
             if (isScanning) {
                 Quagga.stop();
@@ -187,22 +213,19 @@
                 console.log("Quagga stopped.");
             }
         }
-
+        
         // Form Submission Logic
         errorForm.addEventListener("submit", (e) => {
             e.preventDefault();
-
+        
             const orderNumber = orderNumberInput.value;
             const problemDescription = document.getElementById("problemDescription").value;
-
+        
             // Open mail client with pre-filled details
-            const mailtoLink = `mailto:ryan.younggreen@hughessupply.com?subject=Order Issue: ${orderNumber}&body=${encodeURIComponent(problemDescription)}`;
+            const mailtoLink = `mailto:sales@example.com?subject=Order Issue: ${orderNumber}&body=${encodeURIComponent(problemDescription)}`;
             window.location.href = mailtoLink;
         });
+        
     </script>
 </body>
 </html>
-
-
-
-
